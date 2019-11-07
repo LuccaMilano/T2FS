@@ -36,14 +36,23 @@ int format2(int partition, int sectors_per_block) {
 Função:	Monta a partição indicada por "partition" no diretório raiz
 -----------------------------------------------------------------------------*/
 int mount(int partition) {
-	return initFS(partition);
+    if(hasInit != 0)
+        if(diskInit() != 1)
+            return -1;
+	return mountpartition(partition);
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Desmonta a partição atualmente montada, liberando o ponto de montagem.
 -----------------------------------------------------------------------------*/
 int unmount(void) {
-	return -1;
+    if(hasInit != 0)
+        if(diskInit() != 1)
+            return -1;
+
+    mountpart = 0;
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -54,7 +63,18 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
-	return -1;
+    /*
+    INODE dirInode;
+	Record record;
+	int number;
+	char filenameSohArquivo[MAX_FILE_NAME_SIZE+1];
+
+    if(getLastDirInode(filename, &dirInode, &number) != 0)
+		return -1;
+*/
+
+
+	return open2(filename);
 }
 
 /*-----------------------------------------------------------------------------
