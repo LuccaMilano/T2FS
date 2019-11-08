@@ -6,9 +6,7 @@
 #include "../include/t2disk.h"
 #include "../include/apidisk.h"
 #include "../include/functions_aux.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+
 
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
@@ -23,11 +21,17 @@ Função:	Formata logicamente uma partição do disco virtual t2fs_disk.dat para
 		arquivos T2FS definido usando blocos de dados de tamanho
 		corresponde a um múltiplo de setores dados por sectors_per_block.
 -----------------------------------------------------------------------------*/
-int format2(int partition, int sectors_per_block) {
+int format2(int partition, int sectors_per_block){
 	if(diskInit() != 0)
         return -1;
     if(createSuperblock(partition, sectors_per_block) != 0)
         return -2;
+
+
+    openBitmap2(diskMBR.partition[partition].startAddress);
+    setBitmap2(BITMAP_INODE, 0, 1);
+    setBitmap2(BITMAP_DADOS, 0, 1);
+    closeBitmap2();
 
     return 0;
 }
@@ -36,9 +40,10 @@ int format2(int partition, int sectors_per_block) {
 Função:	Monta a partição indicada por "partition" no diretório raiz
 -----------------------------------------------------------------------------*/
 int mount(int partition) {
-    if(hasInit != 0)
+    if(hasInit == 0)
         if(diskInit() != 1)
             return -1;
+    //printf("MOUNT\n");
 	return mountpartition(partition);
 }
 
@@ -63,18 +68,43 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
-    /*
-    INODE dirInode;
-	Record record;
-	int number;
-	char filenameSohArquivo[MAX_FILE_NAME_SIZE+1];
 
-    if(getLastDirInode(filename, &dirInode, &number) != 0)
+	INODE dirInode;
+    Record record;
+
+    dirInode = getdirInode();
+
+    printf("CREATING 1\n");
+
+    if(getRecordFromDir(dirInode, filename, &record) == 0){
+        printf("Arquivo ja existe\n");
+		return -1; //arquivo ja existe
+    }
+
+    strcpy(record.name, filename);
+	record.TypeVal = TYPEVAL_REGULAR;
+
+    printf("CREATING 2\n");
+
+    int inodeNum = initNewFileInode();
+	if(inodeNum == -1)
 		return -1;
-*/
 
+    record.inodeNumber = inodeNum;
 
-	return open2(filename);
+    printf("CREATING 3\n");
+
+    if(addRecordOnDir(&dirInode, record) != 0){
+		removeAllDataFromInode(inodeNum);
+
+		openBitmap2(mountpart);
+		setBitmap2(BITMAP_INODE, inodeNum, 0);
+		closeBitmap2();
+
+		return -1;
+	}
+    printf("FILE CRIADA COM SUCESSO\n");
+    return open2(filename);
 }
 
 /*-----------------------------------------------------------------------------
@@ -88,6 +118,27 @@ int delete2 (char *filename) {
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
 FILE2 open2 (char *filename) {
+    /*
+	FILE2 freeHandle = getFreeFileHandle();
+	printf("OPENING\n");
+	if(freeHandle == -1){
+	    printf("ERRO OPENING 1\n");
+		return -1;  // OpenFiles is full
+	}
+	Record record;
+	if(getRecordFromDir(dirInode, filename, &record) != 0){
+	    printf("ERRO OPENING 2\n");
+		return -1;
+	}
+
+	if(record.TypeVal == TYPEVAL_REGULAR){
+		openFiles[freeHandle].record = record;
+		openFiles[freeHandle].currentPointer = 0;
+		return freeHandle;
+	}
+    printf("ERRO OPENING 3\n");
+	return -1;
+	*/
 	return -1;
 }
 
@@ -118,7 +169,7 @@ int write2 (FILE2 handle, char *buffer, int size) {
 Função:	Função que abre um diretório existente no disco.
 -----------------------------------------------------------------------------*/
 int opendir2 (void) {
-	return -1;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -132,7 +183,9 @@ int readdir2 (DIRENT2 *dentry) {
 Função:	Função usada para fechar um diretório.
 -----------------------------------------------------------------------------*/
 int closedir2 (void) {
-	return -1;
+    DirRoot.record.TypeVal = TYPEVAL_INVALIDO;
+	DirRoot.record.inodeNumber = INVALID_PTR;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
