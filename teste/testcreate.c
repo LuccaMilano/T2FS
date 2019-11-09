@@ -53,10 +53,30 @@ int main(int argc, char const *argv[]){
 */
     char dir[] = "file3";
     int testcreate = create2(dir);
-    printf("Return do Create2 - %d\n", testcreate);
+    printf("Return do Create2 1(Novo)- %d\n", testcreate);
 
     testcreate = create2("file5");
-    printf("Return do Create2 - %d\n", testcreate);
+    printf("Return do Create2 2(Novo)- %d\n", testcreate);
+
+    testcreate = create2("file5");
+    printf("Return do Create2 3(Existe)- %d\n", testcreate);
+
+    testcreate = create2("file5");
+    printf("Return do Create2 4(Existe)- %d\n", testcreate);
+
+    testcreate = create2(dir);
+    printf("Return do Create2 8(Existe)- %d\n", testcreate);
+
+    testcreate = create2("file6");
+    printf("Return do Create2 5(Novo)- %d\n", testcreate);
+
+    testcreate = create2("file7");
+    printf("Return do Create2 6(Novo)- %d\n", testcreate);
+
+    testcreate = create2("file5");
+    printf("Return do Create2 7(Existe)- %d\n", testcreate);
+
+
 
     return 0;
 }

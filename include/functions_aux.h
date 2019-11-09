@@ -91,3 +91,7 @@ int initNewPointerBlock();
 int writePointerOnBlock(DWORD blockNum, DWORD pointer, int index);
 
 void removeAllDataFromInode(int inodeNumber);
+
+FILE2 getFreeFileHandle();
+
+int isFileHandleValid(FILE2 handle);

@@ -74,7 +74,7 @@ FILE2 create2 (char *filename) {
 
     dirInode = getdirInode();
 
-    printf("CREATING 1\n");
+    //printf("CREATING 1\n");
 
     if(getRecordFromDir(dirInode, filename, &record) == 0){
         printf("Arquivo ja existe\n");
@@ -84,7 +84,7 @@ FILE2 create2 (char *filename) {
     strcpy(record.name, filename);
 	record.TypeVal = TYPEVAL_REGULAR;
 
-    printf("CREATING 2\n");
+    //printf("CREATING 2\n");
 
     int inodeNum = initNewFileInode();
 	if(inodeNum == -1)
@@ -92,7 +92,7 @@ FILE2 create2 (char *filename) {
 
     record.inodeNumber = inodeNum;
 
-    printf("CREATING 3\n");
+    //printf("CREATING 3\n");
 
     if(addRecordOnDir(&dirInode, record) != 0){
 		removeAllDataFromInode(inodeNum);
@@ -103,7 +103,7 @@ FILE2 create2 (char *filename) {
 
 		return -1;
 	}
-    printf("FILE CRIADA COM SUCESSO\n");
+    //printf("FILE CRIADA COM SUCESSO\n");
     return open2(filename);
 }
 
@@ -118,14 +118,18 @@ int delete2 (char *filename) {
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
 FILE2 open2 (char *filename) {
-    /*
+
 	FILE2 freeHandle = getFreeFileHandle();
-	printf("OPENING\n");
+	//printf("OPENING\n");
 	if(freeHandle == -1){
 	    printf("ERRO OPENING 1\n");
 		return -1;  // OpenFiles is full
 	}
 	Record record;
+
+	INODE dirInode;
+	dirInode = getdirInode();
+
 	if(getRecordFromDir(dirInode, filename, &record) != 0){
 	    printf("ERRO OPENING 2\n");
 		return -1;
@@ -138,14 +142,19 @@ FILE2 open2 (char *filename) {
 	}
     printf("ERRO OPENING 3\n");
 	return -1;
-	*/
-	return -1;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle) {
+
+	if(isFileHandleValid(handle)){
+	 	openFiles[handle].record.TypeVal = TYPEVAL_INVALIDO;
+		openFiles[handle].record.inodeNumber = INVALID_PTR;
+        return 0;
+    }
+
 	return -1;
 }
 

@@ -7,6 +7,18 @@
 
 int main(int argc, char const *argv[])
 {
+    SUPERBLOCK newSB;
+    int part = 0;
+    if(format2(part,1) != 0){
+        printf("Error at format2\n");
+        return -1;
+    }
+    printf("Particao formatada com sucesso!\n");
+    int aux = mount(part);
+    printf("%d\n", mountpart);
+    printf("%d\n", aux);
+
+
 	char dir[] = "/";
 	int handle= -1;
 

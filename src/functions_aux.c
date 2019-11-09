@@ -368,15 +368,16 @@ int writeRecordOnDir(DWORD blockNum, Record record, int recordNum){
 }
 
 int updateDirInode(INODE dirInode){
-	Record record;
+	//Record record;
 /*
 	if(getRecordFromDir(dirInode, ".", &record) != 0){
 		return -1;
 	}
 */
-	if(writeInodeOnDisk(dirInode, record.inodeNumber) != 0)
+	if(writeInodeOnDisk(dirInode, 0) != 0)
 		return -1;
 
+    dirINode = dirInode; // Pode estar errado
 	return 0;
 }
 
@@ -591,4 +592,20 @@ void removeAllDataFromInode(int inodeNumber){
 		setBitmap2(BITMAP_DADOS, inode.doubleIndPtr, 0);
 	}
 	closeBitmap2();
+}
+
+FILE2 getFreeFileHandle(){
+	FILE2 freeHandle;
+	for(freeHandle = 0; freeHandle < MAX_OPEN_FILES; freeHandle++){
+		if(openFiles[freeHandle].record.TypeVal == TYPEVAL_INVALIDO)
+			return freeHandle;
+	}
+	return -1;
+}
+
+int isFileHandleValid(FILE2 handle){
+	if(handle < 0 || handle >= MAX_OPEN_FILES || openFiles[handle].record.TypeVal != TYPEVAL_REGULAR)
+		return 0;
+	else
+		return 1;
 }

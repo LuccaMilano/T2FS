@@ -14,7 +14,7 @@ INC_DIR=./include
 BIN_DIR=./bin
 SRC_DIR=./src
 
-all: testidentify testreadmbr testformat testcreate
+all: testidentify testreadmbr testformat testcreate testopen testopenclose
 	
 testidentify: testidentify.c $(LIB_DIR)/libt2fs.a
 	$(CC) -o testidentify testidentify.c -L$(LIB_DIR) -lt2fs -Wall
@@ -28,7 +28,13 @@ testformat: testformat.c $(LIB_DIR)/libt2fs.a
 testcreate: testcreate.c $(LIB_DIR)/libt2fs.a
 	$(CC) -o testcreate testcreate.c -L$(LIB_DIR) -lt2fs -Wall
 
+testopen: testopen.c $(LIB_DIR)/libt2fs.a
+	$(CC) -o testopen testopen.c -L$(LIB_DIR) -lt2fs -Wall
+
+testopenclose: testopenclose.c $(LIB_DIR)/libt2fs.a
+	$(CC) -o testopenclose testopenclose.c -L$(LIB_DIR) -lt2fs -Wall
+
 clean:
-	rm -rf testidentify testreadmbr testformat testcreate
+	rm -rf testidentify testreadmbr testformat testcreate testopen testopenclose
 
 
