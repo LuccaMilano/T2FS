@@ -72,21 +72,21 @@ FILE2 create2 (char *filename) {
 	INODE dirInode;
     Record record;
 
-    dirInode = getdirInode();
+    dirInode = getdirInode();       // Recebe os dados do inode referente ao diretório raiz
 
     //printf("CREATING 1\n");
 
-    if(getRecordFromDir(dirInode, filename, &record) == 0){
-        printf("Arquivo ja existe\n");
+    if(getRecordFromDir(dirInode, filename, &record) == 0){     // Caso o arquivo já exista, retorna -1
+        //printf("Arquivo ja existe\n");
 		return -1; //arquivo ja existe
     }
 
-    strcpy(record.name, filename);
+    strcpy(record.name, filename);      // Salva o nome do arquivo e regulariza seu typeval
 	record.TypeVal = TYPEVAL_REGULAR;
 
     //printf("CREATING 2\n");
 
-    int inodeNum = initNewFileInode();
+    int inodeNum = initNewFileInode();      // Cria um novo inode para o arquivo
 	if(inodeNum == -1)
 		return -1;
 
@@ -95,7 +95,7 @@ FILE2 create2 (char *filename) {
     //printf("CREATING 3\n");
 
     if(addRecordOnDir(&dirInode, record) != 0){
-		removeAllDataFromInode(inodeNum);
+		removeAllDataFromInode(inodeNum);       // Caso não consiga adicionar a entrada ao diretório remove os dados do inode e ajusta o bitmap de acordo
 
 		openBitmap2(mountpart);
 		setBitmap2(BITMAP_INODE, inodeNum, 0);
@@ -104,7 +104,7 @@ FILE2 create2 (char *filename) {
 		return -1;
 	}
     //printf("FILE CRIADA COM SUCESSO\n");
-    return open2(filename);
+    return open2(filename);     // Caso o arquivo seja criado com sucesso, ele é posteriormente aberto
 }
 
 /*-----------------------------------------------------------------------------
@@ -122,8 +122,8 @@ FILE2 open2 (char *filename) {
 	FILE2 freeHandle = getFreeFileHandle();
 	//printf("OPENING\n");
 	if(freeHandle == -1){
-	    printf("ERRO OPENING 1\n");
-		return -1;  // OpenFiles is full
+	    //printf("ERRO OPENING 1\n");
+		return -1;  // Número máximo de arquivos abertos atingido
 	}
 	Record record;
 
@@ -131,16 +131,16 @@ FILE2 open2 (char *filename) {
 	dirInode = getdirInode();
 
 	if(getRecordFromDir(dirInode, filename, &record) != 0){
-	    printf("ERRO OPENING 2\n");
-		return -1;
+	    //printf("ERRO OPENING 2\n");
+		return -1;      //Não achou o arquivo no disco
 	}
 
 	if(record.TypeVal == TYPEVAL_REGULAR){
 		openFiles[freeHandle].record = record;
 		openFiles[freeHandle].currentPointer = 0;
-		return freeHandle;
+		return freeHandle;      //Retorna o índice do arquivo, caso encontrado no disco
 	}
-    printf("ERRO OPENING 3\n");
+    //printf("ERRO OPENING 3\n");
 	return -1;
 }
 
@@ -149,7 +149,7 @@ Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle) {
 
-	if(isFileHandleValid(handle)){
+	if(isFileHandleValid(handle)){      // Caso o arquivo indicado esteja aberto, invalida seu inode e typeval
 	 	openFiles[handle].record.TypeVal = TYPEVAL_INVALIDO;
 		openFiles[handle].record.inodeNumber = INVALID_PTR;
         return 0;

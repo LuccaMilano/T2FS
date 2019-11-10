@@ -30,20 +30,23 @@ typedef struct t2fs_superbloco SUPERBLOCK;
 //INODE inode;
 SUPERBLOCK superblock;
 
+// Struct usada para guardar os arquivos abertos
 typedef struct t2fs_openfile{
 	struct t2fs_record record;
-	DWORD currentPointer; // Em bytes a partir do inicio do arquivo!
+	DWORD currentPointer;
 } OpenFile;
 OpenFile openFiles[MAX_OPEN_FILES];
 
 OpenFile DirRoot;
 
+// Struct usada para cada partição
 typedef struct {
     DWORD startAddress;
     DWORD endAddress;
     BYTE name[24];
 } PARTTE;
 
+// Struct usada para ler o bloco MBR
 typedef struct {
     WORD diskVersion;
     WORD sectorSize;
@@ -56,6 +59,7 @@ MBR diskMBR;
 
 
 INODE getdirInode();
+int module2(int num, int num2);
 int ceil2(float num);
 int diskInit();
 int createSuperblock(int partition, int sectors_per_block);

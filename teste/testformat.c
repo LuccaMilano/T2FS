@@ -9,10 +9,10 @@ int main(int argc, char const *argv[]){
     INODE inode1;
     int part = 0;
     if(format2(part,2) != 0){
-        printf("Error at format2\n");
+        printf("Erro na format2\n");
         return -1;
     }
-    printf("Particao formatada com sucesso!\n");
+    printf("Format2 feito\n");
 
 
     int aux = mount(part);

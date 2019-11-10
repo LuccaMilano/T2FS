@@ -15,11 +15,16 @@ DIRENT2 root;
 
 INODE dirINode;
 
+// Função para pegar os dados do node referente ao diretório raiz
 INODE getdirInode(){
     return dirINode;
 }
 
+int module2(int num, int num2){
+    return num-(num/num2)*num2;
+}
 
+// Função para achar o teto de valores float
 int ceil2(float num) {
     int inum = (int)num;
     if (num == (float)inum) {
@@ -28,6 +33,7 @@ int ceil2(float num) {
     return inum + 1;
 }
 
+// Inicia o disco, lendo o bloco MBR
 int diskInit(){
     BYTE buffer[SECTOR_SIZE] = {0};
 
@@ -41,6 +47,7 @@ int diskInit(){
     return 0;
 }
 
+// Cria o superbloco da partição indicada com as informações retiradas do bloco MBR
 int createSuperblock(int partition, int sectors_per_block){
     SUPERBLOCK newSB;
 
@@ -77,18 +84,19 @@ int createSuperblock(int partition, int sectors_per_block){
     return write_sector(diskMBR.partition[partition].startAddress, buffer);
 }
 
+// Dado um número de inode, le o inode referente
 int getInodeFromInodeNumber(DWORD inodeNumber, INODE *inode){
 
 	int inodeSector = inodeAreaStartSector + inodeNumber/INODE_PER_SECTOR;
 	BYTE buffer[SECTOR_SIZE];
-	printf("mountpart 1 - %d\n", mountpart);
+	printf("Mount on point - %d\n", mountpart);
 
     openBitmap2(mountpart);
 
     printf("First Free Inode: %d\n", searchBitmap2(BITMAP_INODE, 0));
 
     int test = getBitmap2(BITMAP_INODE, inodeNumber);
-    printf("getbitmap - %d\n", test);
+    //printf("getbitmap - %d\n", test);
 	if(test == 0){
 		return -1;
 	}
@@ -99,7 +107,8 @@ int getInodeFromInodeNumber(DWORD inodeNumber, INODE *inode){
 		return -1;
 	}
 
-	int inode_byte_start = (inodeNumber % INODE_PER_SECTOR)*INODE_SIZE;
+    int inode_byte_start = (module2(inodeNumber, INODE_PER_SECTOR))*INODE_SIZE;
+	//int inode_byte_start = (inodeNumber % INODE_PER_SECTOR)*INODE_SIZE;
 
 	inode->blocksFileSize = *((DWORD*) (buffer + inode_byte_start + 0));
 	inode->bytesFileSize = *((DWORD*) (buffer + inode_byte_start + 4));
@@ -112,6 +121,7 @@ int getInodeFromInodeNumber(DWORD inodeNumber, INODE *inode){
 
 	//memcpy(inode, buffer, sizeof(INODE));
 
+/*
     printf("----------------INODE----------------\n");
     printf("%d\n", inode_byte_start);
     printf("%d\n", inodeAreaStartSector);
@@ -126,6 +136,7 @@ int getInodeFromInodeNumber(DWORD inodeNumber, INODE *inode){
     printf("%u\n", inode->RefCounter);
     printf("%u\n", inode->reservado);
     printf("----------------INODE----------------\n");
+*/
 
     //memcpy(buffer, &inode, sizeof(INODE));
     //write_sector(inodeAreaStartSector, buffer);
@@ -134,6 +145,7 @@ int getInodeFromInodeNumber(DWORD inodeNumber, INODE *inode){
 	return 0;
 }
 
+// Inicializa o array de arquivos
 void initializeOpenFiles(){
 	int i;
 	for(i = 0; i < MAX_OPEN_FILES; i++){
@@ -141,6 +153,8 @@ void initializeOpenFiles(){
 		openFiles[i].record.inodeNumber = INVALID_PTR;
 	}
 }
+
+// Inicializa o inode referente ao diretório raiz
 int initdirINode(){
     dirINode.blocksFileSize = 0;
 	dirINode.bytesFileSize = 0;
@@ -156,6 +170,8 @@ int initdirINode(){
 
 	return write_sector(inodeAreaStartSector, buffer);
 }
+
+// MOnta a partição indicada
 int mountpartition(int partition){
     if(mountpart == 0)
     {
@@ -167,7 +183,7 @@ int mountpartition(int partition){
 
         memcpy(&superblock, buffer, sizeof(SUPERBLOCK));
 
-        dataAreaStartBlock= mountpart + superblock.superblockSize + superblock.freeBlocksBitmapSize + superblock.freeInodeBitmapSize + superblock.inodeAreaSize;
+        dataAreaStartBlock= mountpart/superblock.blockSize + superblock.superblockSize + superblock.freeBlocksBitmapSize + superblock.freeInodeBitmapSize + superblock.inodeAreaSize;
         inodeAreaStartSector = mountpart + superblock.superblockSize*superblock.blockSize + superblock.freeBlocksBitmapSize*superblock.blockSize + superblock.freeInodeBitmapSize*superblock.blockSize;
 
         printf("DATA start - %d\n", dataAreaStartBlock);
@@ -189,6 +205,7 @@ int mountpartition(int partition){
     }
 }
 
+// Lê os ponteiros de um bloco indicado
 int getPointers(DWORD blockNumber, DWORD *pointers){
 	unsigned char buffer[SECTOR_SIZE];
 	int i, j;
@@ -203,6 +220,7 @@ int getPointers(DWORD blockNumber, DWORD *pointers){
 	return 0;
 }
 
+// Pega os records de um dado bloco
 int getRecordsFromEntryBlock(DWORD blockNumber, Record *records){
 	unsigned char buffer[SECTOR_SIZE];
 	int i, j, c;
@@ -221,6 +239,7 @@ int getRecordsFromEntryBlock(DWORD blockNumber, Record *records){
 	return 0;
 }
 
+// Pega o record indicado de um bloco indicado
 int getRecordFromEntryBlock(DWORD blockNumber, char *filename, Record *record){
 
 	Record records[RECORD_PER_SECTOR*BLOCK_SIZE];
@@ -236,13 +255,15 @@ int getRecordFromEntryBlock(DWORD blockNumber, char *filename, Record *record){
 	return -1; // File not found
 }
 
+// Pega um record indicado do diretório raiz
 int getRecordFromDir(INODE dirInode, char *filename, Record *recordOut){
 	int i, j;
-	// Search on direct pointers
+
 	Record record;
 	DWORD pointers[PTR_PER_SECTOR*BLOCK_SIZE];
 	DWORD doublePointers[PTR_PER_SECTOR*BLOCK_SIZE];
 
+    // Procura nos ponteiros diretos
 	for(i = 0; i < 2; i++){
 		if(dirInode.dataPtr[i] != INVALID_PTR){
 			if(getRecordFromEntryBlock(dirInode.dataPtr[i], filename, &record) == 0){
@@ -251,7 +272,7 @@ int getRecordFromDir(INODE dirInode, char *filename, Record *recordOut){
 			}
 		}
 	}
-	// Search on simple indirection
+	// Procura nos ponteiros de indireção simples
 	if(dirInode.singleIndPtr != INVALID_PTR){
 		getPointers(dirInode.singleIndPtr, pointers);
 		for(i = 0; i < PTR_PER_SECTOR*BLOCK_SIZE; i++){
@@ -263,7 +284,7 @@ int getRecordFromDir(INODE dirInode, char *filename, Record *recordOut){
 			}
 		}
 	}
-	// Search on double indirection
+	// Procura nos ponteiros de indireção dupla
 	if(dirInode.doubleIndPtr != INVALID_PTR){
 		getPointers(dirInode.doubleIndPtr, doublePointers);
 		for(i = 0; i < PTR_PER_SECTOR*BLOCK_SIZE; i++){
@@ -284,6 +305,7 @@ int getRecordFromDir(INODE dirInode, char *filename, Record *recordOut){
 	return -1;
 }
 
+// Escreve um var do tipo DWORD em um buffer
 void writeDwordOnBuffer(unsigned char *buffer, int start, DWORD dword){
 	unsigned char *aux;
 	aux = (unsigned char*)&dword;
@@ -292,6 +314,7 @@ void writeDwordOnBuffer(unsigned char *buffer, int start, DWORD dword){
 		buffer[start + i] = aux[i];
 }
 
+// Escreve um inode no disco
 int writeInodeOnDisk(INODE inode, int inodeNumber){
 	int inodeSector = inodeAreaStartSector + inodeNumber/INODE_PER_SECTOR;
 	BYTE buffer[SECTOR_SIZE] = {0};
@@ -299,7 +322,9 @@ int writeInodeOnDisk(INODE inode, int inodeNumber){
     if(read_sector(inodeSector, buffer) != 0)
 		return -1;
 
-    int inode_byte_start = (inodeNumber % INODE_PER_SECTOR)*INODE_SIZE;
+    int inode_byte_start = (module2(inodeNumber, INODE_PER_SECTOR))*INODE_SIZE;
+
+    //int inode_byte_start = (inodeNumber % INODE_PER_SECTOR)*INODE_SIZE;
 	writeDwordOnBuffer(buffer, inode_byte_start + 0, inode.blocksFileSize);
 	writeDwordOnBuffer(buffer, inode_byte_start + 4, inode.bytesFileSize);
 	writeDwordOnBuffer(buffer, inode_byte_start + 8, inode.dataPtr[0]);
@@ -316,6 +341,7 @@ int writeInodeOnDisk(INODE inode, int inodeNumber){
 	return 0;
 }
 
+// Inicializa o inode para um novo arquivo
 int initNewFileInode(){
     openBitmap2(mountpart);
 
@@ -345,11 +371,15 @@ int initNewFileInode(){
 	return inodeNumber;
 }
 
+// Escreve um record no diretório raiz
 int writeRecordOnDir(DWORD blockNum, Record record, int recordNum){
 	unsigned char buffer[SECTOR_SIZE];
 	int i;
 	int sector = blockNum*BLOCK_SIZE + (recordNum*RECORD_SIZE)/(SECTOR_SIZE);
-	int byte_start = (recordNum % RECORD_PER_SECTOR)*RECORD_SIZE;
+
+	int byte_start = (module2(recordNum, RECORD_PER_SECTOR))*RECORD_SIZE;
+
+	//int byte_start = (recordNum % RECORD_PER_SECTOR)*RECORD_SIZE;
 	if(read_sector(sector, buffer) != 0){
 		//printf("Erro leitura do setor %d\n", sector);
 		return -1;
@@ -367,6 +397,7 @@ int writeRecordOnDir(DWORD blockNum, Record record, int recordNum){
 	return 0;
 }
 
+// Atualiza o diretório raiz
 int updateDirInode(INODE dirInode){
 	//Record record;
 /*
@@ -381,13 +412,14 @@ int updateDirInode(INODE dirInode){
 	return 0;
 }
 
+// Adiciona um record ao diretório raiz
 int addRecordOnDir(INODE *dirInode, Record record){
 	int i, j, k;
 	Record records[RECORD_PER_SECTOR*BLOCK_SIZE];
 	DWORD pointers[PTR_PER_SECTOR*BLOCK_SIZE];
 	DWORD doublePointers[PTR_PER_SECTOR*BLOCK_SIZE];
 
-	// Direto 0
+	// Adicionando caso seja o ponteiro direto 0
 	getRecordsFromEntryBlock(dirInode->dataPtr[0], records);
 	for(i = 0; i < RECORD_PER_SECTOR*BLOCK_SIZE; i++){
 		if(records[i].TypeVal == TYPEVAL_INVALIDO){
@@ -397,7 +429,7 @@ int addRecordOnDir(INODE *dirInode, Record record){
 		}
 	}
 
-	// Direto 1
+	// Adicionando caso seja o ponteiro direto 1
 	if(dirInode->dataPtr[1] == INVALID_PTR){
 		dirInode->dataPtr[1] = initNewEntryBlock();
 		if(dirInode->dataPtr[1] == -1)
@@ -413,7 +445,7 @@ int addRecordOnDir(INODE *dirInode, Record record){
 		}
 	}
 
-	// Indireção Simples
+	// Adicionando caso seja o ponteiro de indireção simples
 	if(dirInode->singleIndPtr == INVALID_PTR){
 		dirInode->singleIndPtr = initNewPointerBlock();
 		if(dirInode->singleIndPtr == -1)
@@ -442,7 +474,7 @@ int addRecordOnDir(INODE *dirInode, Record record){
 		}
 	}
 
-	// Indireção Dupla
+	// Adicionando caso seja o ponteiro de indireção dupla
 	if(dirInode->doubleIndPtr == INVALID_PTR){
 		dirInode->doubleIndPtr = initNewPointerBlock();
 		if(dirInode->doubleIndPtr == -1)
@@ -483,6 +515,7 @@ int addRecordOnDir(INODE *dirInode, Record record){
 	return -1;
 }
 
+// Inicializa um novo bloco para um arquivo
 int initNewEntryBlock(){
 	Record emptyRecord;
 	int i;
@@ -505,6 +538,7 @@ int initNewEntryBlock(){
 	return blockNum;
 }
 
+// Inicializa um novo bloco de ponteiros para um novo arquivo
 int initNewPointerBlock(){
 	DWORD pointer = INVALID_PTR;
 	int i;
@@ -529,10 +563,14 @@ int initNewPointerBlock(){
 	return blockNum;
 }
 
+// Escreve um ponteiro no bloco indicado
 int writePointerOnBlock(DWORD blockNum, DWORD pointer, int index){
 	unsigned char buffer[SECTOR_SIZE];
 	int sector = blockNum*BLOCK_SIZE + (index*PTR_SIZE)/(SECTOR_SIZE);
-	int byte_start = (index % PTR_PER_SECTOR)*PTR_SIZE;
+
+	int byte_start = (module2(index, PTR_PER_SECTOR))*PTR_SIZE;
+
+	//int byte_start = (index % PTR_PER_SECTOR)*PTR_SIZE;
 
 	if(read_sector(sector, buffer) != 0){
 		//printf("Erro leitura do setor %d\n", sector);
@@ -547,6 +585,7 @@ int writePointerOnBlock(DWORD blockNum, DWORD pointer, int index){
 	return 0;
 }
 
+// Remove os dados de um inode indicado
 void removeAllDataFromInode(int inodeNumber){
 	INODE inode;
 	DWORD pointers[PTR_PER_SECTOR*BLOCK_SIZE];
@@ -594,6 +633,7 @@ void removeAllDataFromInode(int inodeNumber){
 	closeBitmap2();
 }
 
+// Pega o índice do primeiro elemento do array que não estiver sendo ocupado por um arquivo
 FILE2 getFreeFileHandle(){
 	FILE2 freeHandle;
 	for(freeHandle = 0; freeHandle < MAX_OPEN_FILES; freeHandle++){
@@ -603,6 +643,7 @@ FILE2 getFreeFileHandle(){
 	return -1;
 }
 
+// Testa se o handle indicado é válido
 int isFileHandleValid(FILE2 handle){
 	if(handle < 0 || handle >= MAX_OPEN_FILES || openFiles[handle].record.TypeVal != TYPEVAL_REGULAR)
 		return 0;

@@ -6,20 +6,20 @@
 
 int main(int argc, char const *argv[]){
     if(diskInit() != 0){
-        printf("Error at diskInit\n");
+        printf("Erro na leitura do bloco MBR\n");
         return -1;
     }
-    printf("\nDisk version: %d\n", diskMBR.diskVersion);
-    printf("Sector size: %d\n", diskMBR.sectorSize);
-    printf("Partition table first byte: %d\n", diskMBR.partitionTableStart);
-    printf("Number of partitions: %d\n\n", diskMBR.numberPartitions);
+    printf("Versao do disco: %d\n", diskMBR.diskVersion);
+    printf("Tamanho do setor: %d\n", diskMBR.sectorSize);
+    printf("Comeco da particao: %d\n", diskMBR.partitionTableStart);
+    printf("Numero de particoes: %d\n\n", diskMBR.numberPartitions);
 
     int i;
     for(i=0; i<4; i++){
-        printf("Partition %d name: %s\n", i, diskMBR.partition[i].name);
-        printf("Partition %d size: %u\n", i, (((diskMBR.partition[i].endAddress - diskMBR.partition[i].startAddress))+1));
-        printf("Partition %d first sector: %u\n\n", i, diskMBR.partition[i].startAddress);
-        printf("Partition %d last sector: %u\n\n", i, diskMBR.partition[i].endAddress);
+        printf("Particao %d nome: %s\n", i, diskMBR.partition[i].name);
+        printf("Particao %d tamanho: %u\n", i, (((diskMBR.partition[i].endAddress - diskMBR.partition[i].startAddress))+1));
+        printf("Particao %d primeiro setor: %u\n\n", i, diskMBR.partition[i].startAddress);
+        printf("Particao %d ultimo setor: %u\n\n", i, diskMBR.partition[i].endAddress);
     }
 return 0;
 }
